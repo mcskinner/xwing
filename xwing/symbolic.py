@@ -35,9 +35,9 @@ class Expression(object):
     @property
     def _(self):
         """Magic "wing" operator. Inverts the callable vs symbolic state."""
-        return self.__class__(**self._kwargs(), is_symbolic=not self.is_symbolic)
+        return self.__class__(**self._ctor_args(), is_symbolic=not self.is_symbolic)
 
-    def _kwargs(self):
+    def _ctor_args(self):
         """Must be implemented by subclasses for convenience of this base class."""
         raise NotImplementedError
 
@@ -184,7 +184,7 @@ class Symbol(Expression):
         super().__init__(is_symbolic)
         self._name = name
 
-    def _kwargs(self):
+    def _ctor_args(self):
         return {"name": self._name}
 
     def _eval(self, context, **options):
@@ -208,7 +208,7 @@ class GetAttr(Expression):
         self._obj = obj
         self._name = name
 
-    def _kwargs(self):
+    def _ctor_args(self):
         return {"obj": self._obj, "name": self._name}
 
     def _eval(self, context, **options):
@@ -236,7 +236,7 @@ class Call(Expression):
         self._args = args
         self._kwargs = kwargs
 
-    def _kwargs(self):
+    def _ctor_args(self):
         return {"func": self._func, "args": self._args, "kwargs": self._kwargs}
 
     def _eval(self, context, **options):
