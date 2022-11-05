@@ -29,6 +29,18 @@ class Expression(object):
     `_eval` is called.
     """
 
+    def __init__(self, is_symbolic=False):
+        self.is_symbolic = is_symbolic
+
+    @property
+    def _(self):
+        """Magic "wing" operator. Inverts the callable vs symbolic state."""
+        return self.__class__(**self._kwargs(), is_symbolic=not self.is_symbolic)
+
+    def _kwargs(self):
+        """Must be implemented by subclasses for convenience of this base class."""
+        raise NotImplementedError
+
     def _eval(self, context, **options):
         """Evaluate a symbolic expression.
         Args:
@@ -47,12 +59,14 @@ class Expression(object):
 
     def __getattr__(self, name):
         """Construct a symbolic representation of `getattr(self, name)`."""
-        return GetAttr(self, name)
+        return GetAttr(self, name, is_symbolic=self.is_symbolic)
 
     def __call__(self, *args, **kwargs):
         """Construct a symbolic representation of `self(*args, **kwargs)`."""
-        # return Call(self, args=args, kwargs=kwargs)
-        return to_callable(self)(*args, **kwargs)
+        if self.is_symbolic:
+            return Call(self, args=args, kwargs=kwargs)
+        else:
+            return to_callable(self)(*args, **kwargs)
 
 
 # New-style classes skip __getattr__ for magic methods, so we must add them
@@ -166,8 +180,12 @@ class Symbol(Expression):
     """`Symbol(name)` is an atomic symbolic expression, labelled with an
     arbitrary `name`."""
 
-    def __init__(self, name):
+    def __init__(self, name, is_symbolic=False):
+        super().__init__(is_symbolic)
         self._name = name
+
+    def _kwargs(self):
+        return {"name": self._name}
 
     def _eval(self, context, **options):
         if options.get("log"):
@@ -185,9 +203,13 @@ class GetAttr(Expression):
     """`GetAttr(obj, name)` is a symbolic expression representing the result of
     `getattr(obj, name)`. (`obj` and `name` can themselves be symbolic.)"""
 
-    def __init__(self, obj, name):
+    def __init__(self, obj, name, is_symbolic=False):
+        super().__init__(is_symbolic)
         self._obj = obj
         self._name = name
+
+    def _kwargs(self):
+        return {"obj": self._obj, "name": self._name}
 
     def _eval(self, context, **options):
         if options.get("log"):
@@ -208,10 +230,14 @@ class Call(Expression):
     iterable, and each value in the `kwargs` dictionary can themselves be
     symbolic)."""
 
-    def __init__(self, func, args=[], kwargs={}):
+    def __init__(self, func, args=[], kwargs={}, is_symbolic=False):
+        super().__init__(is_symbolic)
         self._func = func
         self._args = args
         self._kwargs = kwargs
+
+    def _kwargs(self):
+        return {"func": self._func, "args": self._args, "kwargs": self._kwargs}
 
     def _eval(self, context, **options):
         if options.get("log"):
