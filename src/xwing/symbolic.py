@@ -51,7 +51,8 @@ class Expression(object):
 
     def __call__(self, *args, **kwargs):
         """Construct a symbolic representation of `self(*args, **kwargs)`."""
-        return Call(self, args=args, kwargs=kwargs)
+        # return Call(self, args=args, kwargs=kwargs)
+        return to_callable(self)(*args, **kwargs)
 
 
 # New-style classes skip __getattr__ for magic methods, so we must add them
