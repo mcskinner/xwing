@@ -1,7 +1,7 @@
 all: install test
 
 install:
-	pip install -e src
+	pip install -e .
 
 test:
 	pytest -v tests/
